@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(npm install:*)",
-      "Bash(npx shadcn@latest init --yes --defaults)"
+      "Bash(npx shadcn@latest init --yes --defaults)",
+      "Bash(node -e \"const s = require\\(''stripe''\\); console.log\\(s.LATEST_API_VERSION\\)\")"
     ]
   }
 }

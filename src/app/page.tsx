@@ -1,16 +1,18 @@
 import Link from "next/link";
-import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import { UserButton } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const { userId } = await auth();
+
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
       <div className="max-w-2xl w-full mx-auto px-4 py-16 text-center">
         {/* ヘッダー */}
         <div className="flex justify-end mb-8">
-          <SignedIn>
-            <UserButton afterSignOutUrl="/" />
-          </SignedIn>
-          <SignedOut>
+          {userId ? (
+            <UserButton />
+          ) : (
             <div className="flex gap-4">
               <Link
                 href="/sign-in"
@@ -25,7 +27,7 @@ export default function LandingPage() {
                 新規登録
               </Link>
             </div>
-          </SignedOut>
+          )}
         </div>
 
         {/* メインコンテンツ */}
