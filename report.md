@@ -72,6 +72,58 @@ NEXT_PUBLIC_APP_URL
 ---
 
 ### 次回以降のやること
-- 本番環境へのデプロイ（Vercel等）
-- 本番用Stripeキー（ライブモード）への切り替え
-- 本番用StripeダッシュボードでのWebhookエンドポイント登録
+- Stripe ライブモードへの切り替え（ToDo.md 8️⃣ 参照）
+- Clerk 本番設定（任意、ToDo.md 9️⃣ 参照）
+
+---
+
+## 2026-03-20 — Vercel 本番デプロイ & Stripe Webhook 本番設定
+
+### 概要
+Vercelへの本番デプロイと、Stripe Webhookの本番エンドポイント登録を行い、別アカウントでのエンドツーエンド動作確認を完了した。
+
+---
+
+### 実施内容
+
+#### 1. Vercel デプロイ（初回）
+- GitHub連携でプロジェクトをインポートし、`.env.local` の全環境変数をVercelに設定してデプロイ
+- **ビルドエラー発生** → 下記「発生したエラー」参照
+
+#### 2. Vercel デプロイ（成功）
+- `package.json` に `"postinstall": "prisma generate"` を追加してGit push
+- Vercelが自動でRedeployし、Status: **Ready** になった ✅
+
+#### 3. Stripe Webhook 本番エンドポイント登録
+- Stripeダッシュボード（テストモード）→ Developers → Webhooks → Add endpoint
+- Endpoint URL: `https://test-web-app-omega.vercel.app/api/webhooks/stripe`
+- イベント: `checkout.session.completed` を選択して保存
+- 発行された Signing secret（`whsec_...`）を Vercel の `STRIPE_WEBHOOK_SECRET` に設定
+- Vercel Redeploy 実施
+
+#### 4. 動作確認
+- 既存アカウント（すでにisPremium=trueだったため即 /premium 表示）
+- **別アカウント** でテスト決済（`4242 4242 4242 4242`）→ `/premium` ページ表示 ✅
+- エンドツーエンドの本番動作確認 **完了 ✅**
+
+---
+
+### 発生したエラーと解決策
+
+| エラー | 原因 | 解決策 |
+|---|---|---|
+| `Module '"@prisma/client"' has no exported member 'PrismaClient'` | Vercelのビルド環境で `prisma generate` が実行されておらず、Prismaクライアントが生成されていなかった | `package.json` に `"postinstall": "prisma generate"` を追加。npm install後に自動生成されるようにした |
+| 決済後に `/premium` に飛ばずホームに戻る | `STRIPE_WEBHOOK_SECRET` がローカルの `stripe listen` で発行したwhsec_のままで、Vercel本番環境にWebhookが届いていなかった | StripeダッシュボードでVercel本番URL向けのWebhookエンドポイントを新規登録し、発行されたSigning secretをVercel環境変数に設定してRedeploy |
+
+---
+
+### 現在の状態
+- **デプロイURL**: `https://test-web-app-omega.vercel.app`
+- **モード**: Stripe テストモード（`sk_test_...`）で運用中
+- エンドツーエンドフロー（ランディング → 認証 → 決済 → プレミアム）が本番環境で動作確認済み
+
+---
+
+### 次回以降のやること
+- Stripe ライブモード（`sk_live_...`）への切り替え（実際のカードで決済できるようにする）
+- Clerk 本番キー（`pk_live_...`）への切り替え（任意）

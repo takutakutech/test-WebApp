@@ -77,15 +77,70 @@ cp .env.local.example .env.local
 
 <!-- 次回はここから -->
 
-## 5️⃣ 本番デプロイ（Vercel）
+## 8️⃣ Stripe 本番環境（ライブモード）への切り替え ← **次回ここから**
+
+> テストモードのまま一旦運用中。本番リリースの際に実施する。
+
+### 8-1. Stripe ライブモードに切り替え
+- [ ] Stripe ダッシュボード右上の **「テストモード」トグルをオフ** にしてライブモードへ
+- [ ] **Developers → API keys** から**本番用キー**を取得:
+  ```
+  STRIPE_SECRET_KEY=sk_live_xxxxx
+  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_xxxxx
+  ```
+- [ ] **本番用商品を新規作成**（テストモードの商品はライブモードに引き継がれない）:
+  - Product catalog → Add product → 同じ内容（¥980 一回払い）で作成
+  - 本番用 Price ID を取得:
+    ```
+    STRIPE_PRICE_ID=price_live_xxxxx
+    ```
+
+### 8-2. 本番用 Webhook エンドポイントの登録
+- [ ] Stripe ダッシュボード（ライブモード）→ **Developers → Webhooks → Add endpoint**
+- [ ] Endpoint URL:
+  ```
+  https://test-web-app-omega.vercel.app/api/webhooks/stripe
+  ```
+- [ ] **Listen to events** で `checkout.session.completed` を選択して保存
+- [ ] 登録後に表示される **Signing secret**（`whsec_live_xxxxx`）をコピー
+  - ⚠️ テストモードの `whsec_` とは別物。必ず差し替えること
+
+### 8-3. Vercel 環境変数を本番用に更新してリデプロイ
+- [ ] Vercel → **Settings → Environment Variables** で以下を更新:
+  - `STRIPE_SECRET_KEY` → `sk_live_...`
+  - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` → `pk_live_...`
+  - `STRIPE_PRICE_ID` → 本番用 Price ID
+  - `STRIPE_WEBHOOK_SECRET` → 本番用 `whsec_live_...`
+- [ ] **Deployments → Redeploy** でリデプロイ
+
+### 8-4. 本番動作確認
+- [ ] 実際のクレジットカードで少額決済をテスト
+- [ ] Vercel の **Functions → Logs** で `/api/webhooks/stripe` が正常処理されているか確認
+- [ ] DB の `isPremium` が `true` になっていることを確認
+
+---
+
+## 9️⃣ Clerk 本番設定（任意）
+
+> 現在は `pk_test_...` のままでもVercel上で正常動作中。本番リリース時に必要に応じて実施。
+
+- [ ] Clerk ダッシュボード → アプリの設定 → **Domains** に本番ドメインを追加（通常は自動で動く）
+- [ ] 本番用 Clerk キーに切り替え:
+  - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` → `pk_live_...`
+  - `CLERK_SECRET_KEY` → 本番用の値
+- [ ] Vercel 環境変数を更新してリデプロイ
+
+---
+
+## 5️⃣ 本番デプロイ（Vercel）✅ 完了
 
 ### 5-1. Vercelアカウント・プロジェクト作成
-- [ ] [vercel.com](https://vercel.com) でアカウント作成（GitHubログイン推奨）
-- [ ] GitHubにこのリポジトリをpush済みであることを確認
-- [ ] Vercel ダッシュボード → **Add New → Project** → GitHubリポジトリを選択してインポート
+- [x] [vercel.com](https://vercel.com) でアカウント作成（GitHubログイン推奨）
+- [x] GitHubにこのリポジトリをpush済みであることを確認
+- [x] Vercel ダッシュボード → **Add New → Project** → GitHubリポジトリを選択してインポート
 
 ### 5-2. 環境変数の設定（重要）
-- [ ] Vercelのプロジェクト設定 → **Settings → Environment Variables** に `.env.local` の全変数を追加:
+- [x] Vercelのプロジェクト設定 → **Settings → Environment Variables** に `.env.local` の全変数を追加:
   ```
   DATABASE_URL
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
@@ -100,8 +155,8 @@ cp .env.local.example .env.local
   - 最初は仮でデプロイして、URLが確定してから更新してもOK
 
 ### 5-3. デプロイ実行
-- [ ] **Deploy** ボタンを押してデプロイ開始
-- [ ] ビルドログにエラーがないか確認（TypeScriptエラーが出ることがある）
+- [x] **Deploy** ボタンを押してデプロイ開始
+- [x] ビルドログにエラーがないか確認 → `postinstall: prisma generate` 追加で解決
 
 ---
 
@@ -109,48 +164,18 @@ cp .env.local.example .env.local
 
 > ⚠️ ここが一番てこずりやすいポイント。順番通りにやること。
 
-### 6-1. Stripe ライブモードに切り替え
-- [ ] Stripe ダッシュボード右上の **「テストモード」トグルをオフ** にしてライブモードへ
-- [ ] **Developers → API keys** から**本番用キー**を取得:
-  ```
-  STRIPE_SECRET_KEY=sk_live_xxxxx          ← sk_test_ ではなく sk_live_
-  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_xxxxx
-  ```
-- [ ] **本番用商品も新たに作成**（テストモードの商品はライブモードに引き継がれない）:
-  - Product catalog → Add product → 同じ内容で作成
-  - 本番用 Price ID を取得して Vercel 環境変数を更新:
-    ```
-    STRIPE_PRICE_ID=price_live_xxxxx
-    ```
+### 6-1. テストモードWebhookエンドポイント登録 ✅ 完了
+- [x] Stripe ダッシュボード（テストモード）→ **Developers → Webhooks → Add endpoint**
+- [x] Endpoint URL: `https://test-web-app-omega.vercel.app/api/webhooks/stripe`
+- [x] `checkout.session.completed` を選択して保存
+- [x] Signing secret（`whsec_...`）を取得してVercel環境変数 `STRIPE_WEBHOOK_SECRET` に設定
+- [x] Vercel Redeploy → 別アカウントでテスト決済 → `/premium` 表示 **確認 ✅**
 
-### 6-2. 本番用 Webhook エンドポイントの登録（最重要）
-- [ ] Stripe ダッシュボード（ライブモード）→ **Developers → Webhooks → Add endpoint**
-- [ ] Endpoint URL に Vercel のデプロイ先URLを入力:
-  ```
-  https://your-app.vercel.app/api/webhooks/stripe
-  ```
-- [ ] **Listen to events** で `checkout.session.completed` を選択して保存
-- [ ] 登録後に表示される **Signing secret**（`whsec_live_xxxxx`）をコピー
-- [ ] Vercel の環境変数 `STRIPE_WEBHOOK_SECRET` をこの値に更新
-  - ⚠️ ローカルの `stripe listen` が発行した `whsec_` とは別物。必ず差し替えること。
-
-### 6-3. Vercel に環境変数を反映してリデプロイ
-- [ ] Vercel → **Settings → Environment Variables** で上記キーをすべて更新
-- [ ] **Deployments → Redeploy** でリデプロイ（環境変数変更は再デプロイしないと反映されない）
-
-### 6-4. 本番動作確認
-- [ ] 実際のクレジットカードで少額決済をテスト（または Stripe の「Send test webhook」機能を活用）
-- [ ] Vercel の **Functions → Logs** で `/api/webhooks/stripe` が正常に処理されているか確認
-- [ ] DBの `isPremium` が `true` になっていることを確認
+> ライブモードへの切り替えは 8️⃣ を参照
 
 ---
 
-## 7️⃣ Clerk 本番設定（必要に応じて）
-
-- [ ] Clerk ダッシュボード → アプリの設定 → **Domains** に本番ドメインを追加
-  - Vercel の自動発行ドメイン（`your-app.vercel.app`）はそのまま動くことが多い
-- [ ] 本番用 Clerk キーに切り替える場合は `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY` を更新
-  - 開発用（`pk_test_`）のままでもVercel上で動作するが、本番では `pk_live_` 推奨
+## 7️⃣ Clerk 本番設定（必要に応じて）→ 9️⃣ に移動
 
 ---
 
