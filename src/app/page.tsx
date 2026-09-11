@@ -32,9 +32,7 @@ export default async function LandingPage() {
 
         {/* メインコンテンツ */}
         <h1 className="text-4xl font-bold text-gray-900 mb-4">
-          プレミアムコンテンツ
-          <br />
-          プラットフォーム
+          プレミアムプラン
         </h1>
         <p className="text-xl text-gray-600 mb-8">
           一度の決済で、すべてのプレミアムコンテンツへアクセス
